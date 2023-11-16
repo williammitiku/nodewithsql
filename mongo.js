@@ -29,6 +29,21 @@ app.get('/sales', async (req, res) => {
     client.close();
   }
 });
+// Express route to fetch sales names from MongoDB
+app.get('/salesReps', async (req, res) => {
+  const client = new MongoClient(url, { useNewUrlParser: true, useUnifiedTopology: true });
+  try {
+    await client.connect();
+    const db = client.db(dbName);
+    const sales = await db.collection('salesReps').find().toArray();
+    res.json(sales);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Internal server error' });
+  } finally {
+    client.close();
+  }
+});
 
 // Endpoint to add a new sale
 app.post('/sales', async (req, res) => {
