@@ -86,6 +86,60 @@ app.post('/sales', async (req, res) => {
   }
 });
 
+app.post('/sales', async (req, res) => {
+  const client = new MongoClient(url, { useNewUrlParser: true, useUnifiedTopology: true });
+  try {
+    const { nameOfTheShop, phoneNumber, productName, quantity, amountOfTheProduct, nameOfSales, latitude, longitude } = req.body;
+    const newSale = {
+      nameOfTheShop,
+      phoneNumber,
+      productName,
+      quantity,
+      amountOfTheProduct,
+      nameOfSales,
+      latitude,
+      longitude,
+    };
+    await client.connect();
+    const db = client.db(dbName);
+    const result = await db.collection('sales').insertOne(newSale);
+    res.json({ message: 'Sale added successfully', data: result.ops });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Internal server error' });
+  } finally {
+    client.close();
+  }
+});
+
+app.post('/salesUpdated', async (req, res) => {
+  const client = new MongoClient(url, { useNewUrlParser: true, useUnifiedTopology: true });
+  try {
+    const { nameOfTheShop, phoneNumber, productName, quantity, amountOfTheProduct, nameOfSales, latitude, longitude } = req.body;
+    const newSale = {
+      nameOfTheShop,
+      phoneNumber,
+      productName,
+      quantity,
+      amountOfTheProduct,
+      nameOfSales,
+      latitude,
+      longitude,
+    };
+    await client.connect();
+    const db = client.db(dbName);
+    const result = await db.collection('sales2').insertOne(newSale);
+    res.json({ message: 'Sale added successfully', data: result.ops });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Internal server error' });
+  } finally {
+    client.close();
+  }
+});
+
+
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
