@@ -116,6 +116,20 @@ app.post('/salesUpdated', async (req, res) => {
   const client = new MongoClient(url, { useNewUrlParser: true, useUnifiedTopology: true });
   try {
     const { nameOfTheShop, phoneNumber, productName, quantity, amountOfTheProduct, nameOfSales, latitude, longitude } = req.body;
+    
+    // Check if data already exists with phoneNumber, productName, and quantity
+    await client.connect();
+    const db = client.db(dbName);
+    const existingSale = await db.collection('sales2').findOne({
+      phoneNumber: phoneNumber,
+      productName: productName,
+      quantity: quantity
+    });
+
+    if (existingSale) {
+      return res.status(400).json({ message: 'Sale with this phone number, product name, and quantity already exists' });
+    }
+
     const newSale = {
       nameOfTheShop,
       phoneNumber,
@@ -126,8 +140,7 @@ app.post('/salesUpdated', async (req, res) => {
       latitude,
       longitude,
     };
-    await client.connect();
-    const db = client.db(dbName);
+
     const result = await db.collection('sales2').insertOne(newSale);
     res.json({ message: 'Sale added successfully', data: result.ops });
   } catch (err) {
@@ -137,8 +150,6 @@ app.post('/salesUpdated', async (req, res) => {
     client.close();
   }
 });
-
-
 
 // Start the server
 app.listen(port, () => {
