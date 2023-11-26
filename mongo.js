@@ -114,31 +114,50 @@ app.post('/sales', async (req, res) => {
 
 app.post('/salesUpdated', async (req, res) => {
   const client = new MongoClient(url, { useNewUrlParser: true, useUnifiedTopology: true });
+
   try {
-    const { nameOfTheShop, phoneNumber, productName, quantity, amountOfTheProduct, nameOfSales, latitude, longitude } = req.body;
-    
-    // Check if data already exists with phoneNumber, productName, and quantity
+    const {
+      nameOfTheShop,
+      phoneNumber,
+      latitude,
+      longitude,
+      nameOfSales,
+      products,
+      amountOfTheProduct
+    } = req.body;
+
     await client.connect();
+    const dbName = 'elilta'; // Your database name
     const db = client.db(dbName);
+    
+    // Check if data already exists with phoneNumber and products
     const existingSale = await db.collection('sales2').findOne({
-      phoneNumber: phoneNumber,
-      productName: productName,
-      quantity: quantity
+      'phoneNumber': phoneNumber,
+      $and: products.map(p => ({
+        'products': {
+          $elemMatch: {
+            'productName': p.productName,
+            'quantity': p.quantity
+          }
+        }
+      }))
     });
 
     if (existingSale) {
-      return res.status(400).json({ message: 'Sale with this phone number, product name, and quantity already exists' });
+      return res.status(400).json({ message: 'Sale with this phone number and products already exists' });
     }
+
+    const createdAt = new Date(); // Get the current timestamp
 
     const newSale = {
       nameOfTheShop,
       phoneNumber,
-      productName,
-      quantity,
-      amountOfTheProduct,
-      nameOfSales,
       latitude,
       longitude,
+      nameOfSales,
+      products,
+      amountOfTheProduct,
+      createdAt
     };
 
     const result = await db.collection('sales2').insertOne(newSale);
