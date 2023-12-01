@@ -29,12 +29,29 @@ app.get('/sales', async (req, res) => {
     client.close();
   }
 });
-app.get('/sales2/products', async (req, res) => {
+app.get('/sales2/products-summary', async (req, res) => {
   const client = new MongoClient(url, { useNewUrlParser: true, useUnifiedTopology: true });
   try {
     await client.connect();
     const db = client.db(dbName);
-    const sales = await db.collection('sales2').find({}, { projection: { productName: 1, 'products.totalPrice': 1, _id: 0 } }).toArray();
+    const sales = await db.collection('sales2').aggregate([
+      { $unwind: '$products' },
+      {
+        $group: {
+          _id: '$products.productName',
+          quantity: { $sum: '$products.quantity' },
+          totalPrice: { $sum: '$products.totalPrice' }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          productName: '$_id',
+          quantity: 1,
+          totalPrice: 1
+        }
+      }
+    ]).toArray();
     res.json(sales);
   } catch (err) {
     console.error(err);
