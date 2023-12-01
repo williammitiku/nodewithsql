@@ -29,6 +29,20 @@ app.get('/sales', async (req, res) => {
     client.close();
   }
 });
+app.get('/sales2/products', async (req, res) => {
+  const client = new MongoClient(url, { useNewUrlParser: true, useUnifiedTopology: true });
+  try {
+    await client.connect();
+    const db = client.db(dbName);
+    const sales = await db.collection('sales2').find({}, { projection: { productName: 1, 'products.totalPrice': 1, _id: 0 } }).toArray();
+    res.json(sales);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Internal server error' });
+  } finally {
+    client.close();
+  }
+});
 
 app.get('/salesNew', async (req, res) => {
   const client = new MongoClient(url, { useNewUrlParser: true, useUnifiedTopology: true });
