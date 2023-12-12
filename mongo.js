@@ -1,7 +1,9 @@
 // Install required packages: express, mongodb, cors
 const express = require('express');
+const axios = require('axios');
 const MongoClient = require('mongodb').MongoClient;
 const cors = require('cors');
+ // Replace with the correct path
 
 const app = express();
 const port = 3000;
@@ -13,6 +15,31 @@ app.use(express.json());
 // MongoDB connection URL and Database Name
 const url = 'mongodb+srv://proper1:euDDiTFwPsPf3Qi1@cluster0.1ib4n1x.mongodb.net/';
 const dbName = 'elilta';
+
+
+async function sendSMS(text, amountOfTheProduct) {
+  const apiUrl = 'https://hahu.io/api/send/sms';
+  const secret = 'a2b00195f2ab7d718936b005b5240da73f1cbc3b'; // Replace with your actual API secret key
+
+  const params = {
+    secret: secret,
+    mode: 'devices',
+    phone: '+251921951592', // Replace with the phone number you want to send the SMS to
+    message: `${text}}`,
+    device: '00000000-0000-0000-aee4-1ad38bf6221e', // Replace with your device identifier
+    sim: 1, // Replace with your SIM identifier
+    priority: 1
+  };
+
+  try {
+    const response = await axios.get(apiUrl, { params });
+    console.log('SMS sent successfully:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error sending SMS:', error);
+    throw error;
+  }
+}
 
 // Endpoint to fetch sales data
 app.get('/sales', async (req, res) => {
@@ -261,6 +288,11 @@ app.post('/salesUpdated', async (req, res) => {
     };
 
     const result = await db.collection('sales2').insertOne(newSale);
+
+    // Send SMS after successfully inserting the sale data
+    const textToSend = `Dear Customer, You have bought Products: ${products.map(p => p.productName).join(', ')} -  Which the total Amount is : ${amountOfTheProduct} - Thank You :  ${nameOfTheShop} -`;
+    await sendSMS(textToSend); // Using the sendSMS function
+
     res.json({ message: 'Sale added successfully', data: result.ops });
   } catch (err) {
     console.error(err);
