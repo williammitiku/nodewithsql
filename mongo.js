@@ -6,7 +6,7 @@ const cors = require('cors');
  // Replace with the correct path
 
 const app = express();
-const port = 3000;
+const port = 4003;
 
 // Middleware
 app.use(cors());
@@ -87,6 +87,50 @@ app.get('/sales2/products-summary', async (req, res) => {
     client.close();
   }
 });
+
+app.get('/monthlySales', async (req, res) => {
+  const client = new MongoClient(url, { useNewUrlParser: true, useUnifiedTopology: true });
+
+  try {
+    await client.connect();
+    const db = client.db(dbName);
+
+    // Construct an array to hold total sales amounts for each month
+    const totalSales = [];
+
+    // Get the current year
+    const currentYear = new Date().getFullYear();
+
+    // Loop through each month (from January to December)
+    for (let month = 0; month < 12; month++) {
+      const startDate = new Date(currentYear, month, 1);
+      const endDate = new Date(currentYear, month + 1, 0);
+
+      // Query MongoDB for sales data for the current month
+      const sales = await db.collection('sales2').find({
+        createdAt: {
+          $gte: startDate,
+          $lte: endDate
+        }
+      }).toArray();
+
+      // Calculate total amount for the month
+      const totalAmount = sales.reduce((acc, sale) => acc + sale.amountOfTheProduct, 0);
+
+      // Push the total sales amount into the array
+      totalSales.push(totalAmount || 0); // If no sales, set total amount to 0
+    }
+
+    // Return the array of total sales amounts as JSON
+    res.json(totalSales);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Internal server error' });
+  } finally {
+    client.close();
+  }
+});
+
 
 app.get('/salesNew', async (req, res) => {
   const client = new MongoClient(url, { useNewUrlParser: true, useUnifiedTopology: true });
