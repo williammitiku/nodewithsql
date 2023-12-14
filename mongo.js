@@ -88,6 +88,40 @@ app.get('/sales2/products-summary', async (req, res) => {
   }
 });
 
+app.get('/productTotalQuantities', async (req, res) => {
+  const client = new MongoClient(url, { useNewUrlParser: true, useUnifiedTopology: true });
+
+  try {
+    await client.connect();
+    const db = client.db(dbName);
+
+    const productQuantities = await db.collection('sales2').aggregate([
+      { $unwind: '$products' },
+      {
+        $group: {
+          _id: '$products.productName',
+          totalQuantity: { $sum: '$products.quantity' }
+        }
+      }
+    ]).toArray();
+
+    const productNames = productQuantities.map((item) => item._id);
+    const totalQuantities = productQuantities.map((item) => item.totalQuantity);
+
+    const response = {
+      ProductName: productNames,
+      TotalQuantityOrdered: totalQuantities
+    };
+
+    res.json(response);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Internal server error' });
+  } finally {
+    client.close();
+  }
+});
+
 app.get('/monthlySales', async (req, res) => {
   const client = new MongoClient(url, { useNewUrlParser: true, useUnifiedTopology: true });
 
@@ -256,6 +290,47 @@ app.post('/sales', async (req, res) => {
     client.close();
   }
 });
+
+// ... (Your existing code remains the same)
+
+// New endpoint to fetch product summary from sales2 document
+app.get('/productSummaryQ', async (req, res) => {
+  const client = new MongoClient(url, { useNewUrlParser: true, useUnifiedTopology: true });
+
+  try {
+    await client.connect();
+    const db = client.db(dbName);
+
+    const productSummary = await db.collection('sales2').aggregate([
+      { $unwind: '$products' },
+      {
+        $group: {
+          _id: '$products.productName',
+          totalQuantity: { $sum: '$products.quantity' },
+          totalAmount: { $sum: '$products.totalPrice' }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          productName: '$_id',
+          totalQuantity: 1,
+          totalAmount: 1
+        }
+      }
+    ]).toArray();
+
+    res.json(productSummary);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Internal server error' });
+  } finally {
+    client.close();
+  }
+});
+
+// ... (Your existing code remains the same)
+
 
 app.post('/sales', async (req, res) => {
   const client = new MongoClient(url, { useNewUrlParser: true, useUnifiedTopology: true });
